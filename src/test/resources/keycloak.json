@@ -1,0 +1,10 @@
+{
+  "realm": "gravitee",
+  "auth-server-url": "http://localhost:8080/auth",
+  "ssl-required": "external",
+  "resource": "sdqsdqsdqsd",
+  "credentials": {
+    "secret": "e5e64593-bc18-4cd8-93e6-cd48fc4ad947"
+  },
+  "confidential-port": 0
+}
