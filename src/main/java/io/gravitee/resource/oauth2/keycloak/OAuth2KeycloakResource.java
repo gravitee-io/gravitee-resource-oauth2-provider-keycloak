@@ -46,7 +46,6 @@ import org.springframework.context.ApplicationContextAware;
 import java.io.IOException;
 import java.net.URI;
 import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -121,10 +120,10 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                                 adapterConfig.getCredentials().get("secret")).getBytes());
 
         // Prepare userinfo endpoint calls
-        userInfoEndpointURI = introspectionUri.getPath() + "/realms/" + adapterConfig.getRealm() + KEYCLOAK_USERINFO_ENDPOINT;
+        userInfoEndpointURI = introspectionUri.getPath() + KEYCLOAK_USERINFO_ENDPOINT;
 
         // Prepare introspection endpoint calls
-        introspectionEndpointURI = introspectionUri.getPath() + "/realms/" + adapterConfig.getRealm() + KEYCLOAK_INTROSPECTION_ENDPOINT;
+        introspectionEndpointURI = introspectionUri.getPath() + KEYCLOAK_INTROSPECTION_ENDPOINT;
 
         vertx = applicationContext.getBean(Vertx.class);
     }
