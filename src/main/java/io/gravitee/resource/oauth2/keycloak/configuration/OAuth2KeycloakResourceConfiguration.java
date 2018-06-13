@@ -24,6 +24,7 @@ import io.gravitee.resource.api.ResourceConfiguration;
 public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguration {
 
     private String keycloakConfiguration;
+    private boolean validateTokenLocally;
 
     public String getKeycloakConfiguration() {
         return keycloakConfiguration;
@@ -31,5 +32,13 @@ public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguratio
 
     public void setKeycloakConfiguration(String keycloakConfiguration) {
         this.keycloakConfiguration = keycloakConfiguration;
+    }
+
+    public boolean isValidateTokenLocally() {
+        return validateTokenLocally;
+    }
+
+    public void setValidateTokenLocally(boolean validateTokenLocally) {
+        this.validateTokenLocally = validateTokenLocally;
     }
 }
