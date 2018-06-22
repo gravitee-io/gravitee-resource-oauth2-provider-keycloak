@@ -32,6 +32,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.net.ProxyOptions;
+
 import org.keycloak.RSATokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.PemUtils;
@@ -106,6 +108,14 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 .setDefaultPort(authorizationServerPort)
                 .setDefaultHost(authorizationServerHost);
 
+        //Use proxy if it is set in properties
+        if (System.getProperty("https.proxyHost") != null && System.getProperty("https.proxyPort") != null){
+        	httpClientOptions.setProxyOptions(new ProxyOptions().setHost(System.getProperty("https.proxyHost")).setPort(Integer.parseInt(System.getProperty("https.proxyPort"))));
+        }
+        if (System.getProperty("http.proxyHost") != null && System.getProperty("http.proxyPort") != null){
+            httpClientOptions.setProxyOptions(new ProxyOptions().setHost(System.getProperty("http.proxyHost")).setPort(Integer.parseInt(System.getProperty("http.proxyPort"))));
+        }
+        
         // Use SSL connection if authorization schema is set to HTTPS
         if (HTTPS_SCHEME.equalsIgnoreCase(introspectionUri.getScheme())) {
             httpClientOptions
