@@ -16,9 +16,15 @@
           "mode": "javascript"
         }
       }
+    },
+    "validateTokenLocally" : {
+      "title": "Local token validation",
+      "type" : "boolean",
+      "default": true
     }
   },
   "required": [
-    "keycloakConfiguration"
+    "keycloakConfiguration",
+    "validateTokenLocally"
   ]
 }

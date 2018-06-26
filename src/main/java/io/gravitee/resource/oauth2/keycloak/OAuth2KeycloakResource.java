@@ -18,6 +18,7 @@ package io.gravitee.resource.oauth2.keycloak;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.common.http.HttpStatusCode;
 import io.gravitee.common.http.MediaType;
@@ -25,26 +26,31 @@ import io.gravitee.gateway.api.handler.Handler;
 import io.gravitee.resource.oauth2.api.OAuth2Resource;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
-import io.gravitee.resource.oauth2.keycloak.adapters.KeycloakDeploymentBuilder;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
-import org.keycloak.RSATokenVerifier;
+import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.adapters.KeycloakDeploymentBuilder;
+import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
+import org.keycloak.util.JsonSerialization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.HashMap;
@@ -81,8 +87,10 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private PublicKey publicKey;
     private String realmUrl;
+    private KeycloakDeployment keycloakDeployment;
+    private boolean checkTokenLocally;
+
 
     @Override
     protected void doStart() throws Exception {
@@ -90,10 +98,11 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         logger.info("Starting a Keycloak Adapter resource");
 
-        AdapterConfig adapterConfig = KeycloakDeploymentBuilder.loadAdapterConfig(
-                configuration().getKeycloakConfiguration());
+        checkTokenLocally = configuration().isValidateTokenLocally();
+        InputStream configStream = new ByteArrayInputStream(configuration().getKeycloakConfiguration().getBytes(StandardCharsets.UTF_8));
+        AdapterConfig adapterConfig = KeycloakDeploymentBuilder.loadAdapterConfig(configStream);
+        keycloakDeployment = KeycloakDeploymentBuilder.build(adapterConfig);
 
-        publicKey = PemUtils.decodePublicKey(adapterConfig.getRealmKey());
         realmUrl = adapterConfig.getAuthServerUrl() + "/realms/" + adapterConfig.getRealm();
 
         URI introspectionUri = URI.create(realmUrl);
@@ -131,7 +140,6 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     @Override
     protected void doStop() throws Exception {
         super.doStop();
-
         httpClients.values().forEach(httpClient -> {
             try {
                 httpClient.close();
@@ -143,15 +151,19 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     @Override
     public void introspect(String accessToken, Handler<OAuth2Response> responseHandler) {
-        if (publicKey != null) {
+        if (checkTokenLocally) {
             try {
-                AccessToken token = RSATokenVerifier.verifyToken(accessToken, publicKey, realmUrl);
-                responseHandler.handle(new OAuth2Response(true, MAPPER.writeValueAsString(token)));
+                AccessToken token = AdapterRSATokenVerifier.verifyToken(accessToken, keycloakDeployment);
+                // Not optimal
+                ObjectNode tokenMetadata = JsonSerialization.createObjectNode(token);
+                tokenMetadata.put("client_id", token.getIssuedFor());
+                tokenMetadata.put("username", token.getPreferredUsername());
+                responseHandler.handle(new OAuth2Response(true, MAPPER.writeValueAsString(tokenMetadata)));
             } catch (VerificationException ve) {
                 logger.error("Unable to verify access token", ve);
                 responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
-            } catch (JsonProcessingException jpe) {
-                logger.error("Unable to transform access token", jpe);
+            } catch (IOException e) {
+                logger.error("Unable to transform access token", e);
             }
         } else {
             HttpClient httpClient = httpClients.computeIfAbsent(
