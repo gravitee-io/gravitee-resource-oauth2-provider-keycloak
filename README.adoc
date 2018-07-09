@@ -9,8 +9,8 @@ endif::[]
 
 The Keycloak adapter resource is defined to introspect an access token provided by Keycloak.
 
-If the `realm-public-key` property is defined in configuration, the incoming access token is validated without having
- to invoke en introspection endpoint. If not, the resource is calling the introspection endpoint at `http://keycloak_host:port/auth/realms/{realmName}/protocol/openid-connect/token/introspect`.
+If the `validateTokenLocally` configuration property is true, the incoming access token is validated without having to invoke en introspection endpoint.
+If not, the resource is calling the introspection endpoint at `http://keycloak_host:port/auth/realms/{realmName}/protocol/openid-connect/token/introspect`.
 
 == Configuration
 
@@ -23,7 +23,13 @@ You can configure the resource with the following options :
 ^.^|X
 |Keycloak OIDC JSON client adapter configuration
 ^.^|string
-^.^|-
+^.^|-.
+
+^|validateTokenLocally
+^.^|X
+|Is access token validated locally using realm public keys
+^.^|boolean
+^.^|true
 
 |===
 
@@ -36,7 +42,6 @@ You can configure the resource with the following options :
         "keycloakConfiguration":
             "{
                 "realm": "gravitee",  
-                "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlFGvVjpMJ8Q+MtP4uZmU9n2PoqF58BzVb6cyNKBg3sFM1QSyc9Un+KeVmrPYywu5HzwQRsPfSc4sHLRQmctv0zw8VcItuyCLoCecAAMVfSGeI3AbOQzC9j8leXENSI3byjQYl8qfwFUME/VR6wgpO3g+HXf+KDygByOAKsKm1zTveY3UrZbeHIjYFvqWDlzGS3oN2/FdneqaQbeOkpGbFKWYRZkWtIXhXtKP9DTr44iD784XVdLiLjo40WP2qM7UI6+0Gj5/eCB6b+m/EMBLv1CeYfKvAviHMEq2ip/7k3fVOP5v3EpWTWH9iy/tz+MrP1kJaRaB7Wb+HT4viZqAjQIDAQAB",
                 "auth-server-url": "http://localhost:8080/auth",
                 "ssl-required": "external",
                 "resource": "gravitee",
@@ -46,6 +51,7 @@ You can configure the resource with the following options :
                 "confidential-port": 0,
                 "policy-enforcer": {}
             }"
-        }
+        },
+        "validateTokenLocally": true
 }
 ----
