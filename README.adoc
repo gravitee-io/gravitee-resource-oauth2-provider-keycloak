@@ -1,4 +1,4 @@
-= Gravitee.io - Keyloak Adapter Resource
+= Gravitee.io - Keycloak Adapter Resource
 
 ifdef::env-github[]
 image:https://ci.gravitee.io/buildStatus/icon?job=gravitee-io/gravitee-resource-oauth2-provider-keycloak/master["Build status", link="https://ci.gravitee.io/job/gravitee-io/job/gravitee-resource-oauth2-provider-keycloak/"]
