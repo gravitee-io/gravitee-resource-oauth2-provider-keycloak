@@ -15,7 +15,6 @@
  */
 package io.gravitee.resource.oauth2.keycloak;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -34,9 +33,8 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
-import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
+import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
-import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.util.JsonSerialization;
@@ -51,7 +49,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.security.PublicKey;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -153,7 +150,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     public void introspect(String accessToken, Handler<OAuth2Response> responseHandler) {
         if (checkTokenLocally) {
             try {
-                AccessToken token = AdapterRSATokenVerifier.verifyToken(accessToken, keycloakDeployment);
+                AccessToken token = AdapterTokenVerifier.verifyToken(accessToken, keycloakDeployment);
                 // Not optimal
                 ObjectNode tokenMetadata = JsonSerialization.createObjectNode(token);
                 tokenMetadata.put("client_id", token.getIssuedFor());
