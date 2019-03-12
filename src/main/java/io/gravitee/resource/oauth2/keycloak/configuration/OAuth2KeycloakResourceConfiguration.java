@@ -25,6 +25,7 @@ public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguratio
 
     private String keycloakConfiguration;
     private boolean validateTokenLocally;
+    private String userClaim;
 
     public String getKeycloakConfiguration() {
         return keycloakConfiguration;
@@ -40,5 +41,13 @@ public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguratio
 
     public void setValidateTokenLocally(boolean validateTokenLocally) {
         this.validateTokenLocally = validateTokenLocally;
+    }
+
+    public String getUserClaim() {
+        return userClaim;
+    }
+
+    public void setUserClaim(String userClaim) {
+        this.userClaim = userClaim;
     }
 }
