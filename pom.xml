@@ -36,7 +36,7 @@
     <properties>
         <gravitee-resource-api.version>1.0.0</gravitee-resource-api.version>
         <gravitee-gateway-api.version>1.12.0</gravitee-gateway-api.version>
-        <gravitee-resource-oauth2-provider-api.version>1.2.0</gravitee-resource-oauth2-provider-api.version>
+        <gravitee-resource-oauth2-provider-api.version>1.3.0-SNAPSHOT</gravitee-resource-oauth2-provider-api.version>
 
         <keycloak.version>4.6.0.Final</keycloak.version>
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
