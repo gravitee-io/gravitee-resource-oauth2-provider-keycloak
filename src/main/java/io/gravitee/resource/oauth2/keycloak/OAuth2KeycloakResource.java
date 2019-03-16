@@ -239,6 +239,11 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     }
 
     @Override
+    public String getUserClaim() {
+        return configuration().getUserClaim();
+    }
+    
+    @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
