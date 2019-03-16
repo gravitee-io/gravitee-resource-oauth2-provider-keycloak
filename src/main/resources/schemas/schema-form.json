@@ -21,6 +21,12 @@
       "title": "Local token validation",
       "type" : "boolean",
       "default": true
+    },
+    "userClaim" : {
+      "title": "User claim",
+      "description": "User claim field used to store end user on log analytics",
+      "type": "string",
+      "default": "sub"
     }
   },
   "required": [
