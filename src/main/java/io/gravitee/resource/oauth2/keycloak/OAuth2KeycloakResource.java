@@ -158,7 +158,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 responseHandler.handle(new OAuth2Response(true, MAPPER.writeValueAsString(tokenMetadata)));
             } catch (VerificationException ve) {
                 logger.error("Unable to verify access token", ve);
-                responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
+                responseHandler.handle(new OAuth2Response(false, "access_denied"));
             } catch (IOException e) {
                 logger.error("Unable to transform access token", e);
             }
@@ -183,7 +183,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                     if (active) {
                         responseHandler.handle(new OAuth2Response(true, body));
                     } else {
-                        responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
+                        responseHandler.handle(new OAuth2Response(false, "access_denied"));
                     }
                 } else {
                     responseHandler.handle(new OAuth2Response(false, body));
