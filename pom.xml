@@ -62,6 +62,7 @@
             <groupId>io.gravitee.resource</groupId>
             <artifactId>gravitee-resource-oauth2-provider-api</artifactId>
             <version>${gravitee-resource-oauth2-provider-api.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Keycloak -->
