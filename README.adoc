@@ -31,6 +31,18 @@ You can configure the resource with the following options :
 ^.^|boolean
 ^.^|true
 
+^|verifyHost
+^.^|X
+|Whether host should be verified during SSL handshake
+^.^|boolean
+^.^|false
+
+^|trustAll
+^.^|X
+|If all certificates should be accepted during SSL handshake
+^.^|boolean
+^.^|true
+
 |===
 
 
@@ -52,6 +64,8 @@ You can configure the resource with the following options :
                 "policy-enforcer": {}
             }"
         },
-        "validateTokenLocally": true
+        "validateTokenLocally": true,
+        "verifyHost": false,
+        "trustAll": true
 }
 ----

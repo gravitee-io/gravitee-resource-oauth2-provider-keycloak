@@ -29,6 +29,10 @@ public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguratio
 
     private String userClaim;
 
+    private boolean verifyHost;
+
+    private boolean trustAll = true;
+
     public String getKeycloakConfiguration() {
         return keycloakConfiguration;
     }
@@ -51,5 +55,21 @@ public class OAuth2KeycloakResourceConfiguration implements ResourceConfiguratio
 
     public void setUserClaim(String userClaim) {
         this.userClaim = userClaim;
+    }
+
+    public boolean isVerifyHost() {
+        return verifyHost;
+    }
+
+    public void setVerifyHost(boolean verifyHost) {
+        this.verifyHost = verifyHost;
+    }
+
+    public boolean isTrustAll() {
+        return trustAll;
+    }
+
+    public void setTrustAll(boolean trustAll) {
+        this.trustAll = trustAll;
     }
 }

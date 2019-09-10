@@ -27,10 +27,24 @@
       "description": "User claim field used to store end user on log analytics",
       "type": "string",
       "default": "sub"
+    },
+    "verifyHost" : {
+      "title": "Verify host",
+      "description": "Of certificate on SSL connection to keycloak host",
+      "type" : "boolean",
+      "default": false
+    },
+    "trustAll" : {
+      "title": "Trust all",
+      "description": "Trust all certificates, including self-signed ones",
+      "type" : "boolean",
+      "default": true
     }
   },
   "required": [
     "keycloakConfiguration",
-    "validateTokenLocally"
+    "validateTokenLocally",
+    "verifyHost",
+    "trustAll"
   ]
 }
