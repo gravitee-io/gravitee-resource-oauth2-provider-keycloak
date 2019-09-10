@@ -116,8 +116,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
         if (HTTPS_SCHEME.equalsIgnoreCase(introspectionUri.getScheme())) {
             httpClientOptions
                     .setSsl(true)
-                    .setVerifyHost(false)
-                    .setTrustAll(true);
+                    .setVerifyHost(configuration().isVerifyHost())
+                    .setTrustAll(configuration().isTrustAll());
         }
 
         introspectionEndpointAuthorization = AUTHORIZATION_HEADER_BASIC_SCHEME +
@@ -179,7 +179,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 String body = buffer.toString();
                 if (response.statusCode() == HttpStatusCode.OK_200) {
                     JsonNode introspectPayload = readPayload(body);
-                    boolean active = introspectPayload.path("active").asBoolean(false);
+                    boolean active = introspectPayload != null && introspectPayload.path("active").asBoolean(false);
                     if (active) {
                         responseHandler.handle(new OAuth2Response(true, body));
                     } else {
