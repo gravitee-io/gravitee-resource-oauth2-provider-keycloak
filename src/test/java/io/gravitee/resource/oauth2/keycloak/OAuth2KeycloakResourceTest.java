@@ -18,6 +18,7 @@ package io.gravitee.resource.oauth2.keycloak;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.gravitee.common.http.MediaType;
 import io.gravitee.gateway.api.handler.Handler;
+import io.gravitee.node.api.Node;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.vertx.core.Vertx;
@@ -106,6 +107,9 @@ public class OAuth2KeycloakResourceTest {
     @Mock
     private OAuth2KeycloakResourceConfiguration configuration;
 
+    @Mock
+    private Node node;
+
     @InjectMocks
     private OAuth2KeycloakResource resource;
 
@@ -113,6 +117,7 @@ public class OAuth2KeycloakResourceTest {
     public void init() {
         initMocks(this);
         Mockito.when(applicationContext.getBean(Vertx.class)).thenReturn(Vertx.vertx());
+        Mockito.when(applicationContext.getBean(Node.class)).thenReturn(node);
     }
 
     @Test
