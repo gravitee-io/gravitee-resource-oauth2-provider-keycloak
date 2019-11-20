@@ -21,7 +21,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.common.http.HttpStatusCode;
 import io.gravitee.common.http.MediaType;
+import io.gravitee.common.utils.UUID;
 import io.gravitee.gateway.api.handler.Handler;
+import io.gravitee.node.api.Node;
+import io.gravitee.node.api.utils.NodeUtils;
 import io.gravitee.resource.oauth2.api.OAuth2Resource;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
@@ -88,6 +91,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     private KeycloakDeployment keycloakDeployment;
     private boolean checkTokenLocally;
 
+    private String userAgent;
 
     @Override
     protected void doStart() throws Exception {
@@ -130,7 +134,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         // Prepare introspection endpoint calls
         introspectionEndpointURI = introspectionUri.getPath() + KEYCLOAK_INTROSPECTION_ENDPOINT;
-
+        userAgent = NodeUtils.userAgent(applicationContext.getBean(Node.class));
         vertx = applicationContext.getBean(Vertx.class);
     }
 
@@ -170,6 +174,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
             HttpClientRequest request = httpClient.post(introspectionEndpointURI);
 
+            request.headers().add(HttpHeaders.USER_AGENT, userAgent);
+            request.headers().add("X-Gravitee-Request-Id", UUID.toString(UUID.random()));
             request.headers().add(HttpHeaders.AUTHORIZATION, introspectionEndpointAuthorization);
             request.headers().add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
             request.headers().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED);
@@ -208,6 +214,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         HttpClientRequest request = httpClient.get(userInfoEndpointURI);
 
+        request.headers().add(HttpHeaders.USER_AGENT, userAgent);
+        request.headers().add("X-Gravitee-Request-Id", UUID.toString(UUID.random()));
         request.headers().add(HttpHeaders.AUTHORIZATION, AUTHORIZATION_HEADER_BEARER_SCHEME + accessToken);
         request.headers().add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
 
