@@ -29,11 +29,10 @@ import io.gravitee.resource.oauth2.api.OAuth2Resource;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.*;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
@@ -172,36 +171,63 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
             logger.debug("Introspect access token by requesting {}", introspectionEndpointURI);
 
-            HttpClientRequest request = httpClient.post(introspectionEndpointURI);
+            final RequestOptions reqOptions = new RequestOptions()
+                    .setMethod(HttpMethod.POST)
+                    .setURI(introspectionEndpointURI)
+                    .putHeader(HttpHeaders.USER_AGENT, userAgent)
+                    .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
+                    .putHeader(HttpHeaders.AUTHORIZATION, introspectionEndpointAuthorization)
+                    .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
+                    .putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED);
 
-            request.headers().add(HttpHeaders.USER_AGENT, userAgent);
-            request.headers().add("X-Gravitee-Request-Id", UUID.toString(UUID.random()));
-            request.headers().add(HttpHeaders.AUTHORIZATION, introspectionEndpointAuthorization);
-            request.headers().add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
-            request.headers().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED);
+            httpClient.request(reqOptions)
+                    .onFailure(new io.vertx.core.Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            logger.error("An error occurs while introspecting access token", event);
+                            responseHandler.handle(new OAuth2Response(false, event.getMessage()));
+                        }
+                    })
+                    .onSuccess(new io.vertx.core.Handler<HttpClientRequest>() {
+                        @Override
+                        public void handle(HttpClientRequest request) {
 
-            request.handler(response -> response.bodyHandler(buffer -> {
-                logger.debug("Keycloak introspection endpoint returns a response with a {} status code", response.statusCode());
-                String body = buffer.toString();
-                if (response.statusCode() == HttpStatusCode.OK_200) {
-                    JsonNode introspectPayload = readPayload(body);
-                    boolean active = introspectPayload != null && introspectPayload.path("active").asBoolean(false);
-                    if (active) {
-                        responseHandler.handle(new OAuth2Response(true, body));
-                    } else {
-                        responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
-                    }
-                } else {
-                    responseHandler.handle(new OAuth2Response(false, body));
-                }
-            }));
-
-            request.exceptionHandler(event -> {
-                logger.error("An error occurs while introspecting access token", event);
-                responseHandler.handle(new OAuth2Response(false, event.getMessage()));
-            });
-
-            request.end("token=" + accessToken);
+                            request.response(new io.vertx.core.Handler<AsyncResult<HttpClientResponse>>() {
+                                                 @Override
+                                                 public void handle(AsyncResult<HttpClientResponse> asyncResponse) {
+                                                     if (asyncResponse.failed()) {
+                                                         logger.error("An error occurs while introspecting access token", asyncResponse.cause());
+                                                         responseHandler.handle(new OAuth2Response(false, asyncResponse.cause().getMessage()));
+                                                     } else {
+                                                         final HttpClientResponse response = asyncResponse.result();
+                                                         response.bodyHandler(buffer -> {
+                                                             logger.debug("Keycloak introspection endpoint returns a response with a {} status code", response.statusCode());
+                                                             String body = buffer.toString();
+                                                             if (response.statusCode() == HttpStatusCode.OK_200) {
+                                                                 JsonNode introspectPayload = readPayload(body);
+                                                                 boolean active = introspectPayload != null && introspectPayload.path("active").asBoolean(false);
+                                                                 if (active) {
+                                                                     responseHandler.handle(new OAuth2Response(true, body));
+                                                                 } else {
+                                                                     responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
+                                                                 }
+                                                             } else {
+                                                                 responseHandler.handle(new OAuth2Response(false, body));
+                                                             }
+                                                         });
+                                                     }
+                                                 }
+                                             })
+                                    .exceptionHandler(new io.vertx.core.Handler<Throwable>() {
+                                        @Override
+                                        public void handle(Throwable event) {
+                                            logger.error("An error occurs while introspecting access token", event);
+                                            responseHandler.handle(new OAuth2Response(false, event.getMessage()));
+                                        }
+                                    })
+                                    .end("token=" + accessToken);
+                        }
+                    });
         }
     }
 
@@ -212,29 +238,56 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         logger.debug("Get userinfo from {}", userInfoEndpointURI);
 
-        HttpClientRequest request = httpClient.get(userInfoEndpointURI);
+        final RequestOptions reqOptions = new RequestOptions()
+                .setMethod(HttpMethod.GET)
+                .setURI(userInfoEndpointURI)
+                .putHeader(HttpHeaders.USER_AGENT, userAgent)
+                .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
+                .putHeader(HttpHeaders.AUTHORIZATION, AUTHORIZATION_HEADER_BEARER_SCHEME + accessToken)
+                .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
 
-        request.headers().add(HttpHeaders.USER_AGENT, userAgent);
-        request.headers().add("X-Gravitee-Request-Id", UUID.toString(UUID.random()));
-        request.headers().add(HttpHeaders.AUTHORIZATION, AUTHORIZATION_HEADER_BEARER_SCHEME + accessToken);
-        request.headers().add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
+        httpClient.request(reqOptions)
+                .onFailure(new io.vertx.core.Handler<Throwable>() {
+                    @Override
+                    public void handle(Throwable event) {
+                        logger.error("An error occurs while getting userinfo from access token", event);
+                        responseHandler.handle(new UserInfoResponse(false, event.getMessage()));
+                    }
+                })
+                .onSuccess(new io.vertx.core.Handler<HttpClientRequest>() {
+                               @Override
+                               public void handle(HttpClientRequest request) {
+                                   request.response(new io.vertx.core.Handler<AsyncResult<HttpClientResponse>>() {
+                                       @Override
+                                       public void handle(AsyncResult<HttpClientResponse> asyncResponse) {
+                                           if (asyncResponse.failed()) {
+                                               logger.error("An error occurs while introspecting access token", asyncResponse.cause());
+                                               responseHandler.handle(new UserInfoResponse(false, asyncResponse.cause().getMessage()));
+                                           } else {
+                                               final HttpClientResponse response = asyncResponse.result();
+                                               response.bodyHandler(buffer -> {
+                                                   logger.debug("Userinfo endpoint returns a response with a {} status code", response.statusCode());
 
-        request.handler(response -> response.bodyHandler(buffer -> {
-            logger.debug("Userinfo endpoint returns a response with a {} status code", response.statusCode());
-
-            if (response.statusCode() == HttpStatusCode.OK_200) {
-                responseHandler.handle(new UserInfoResponse(true, buffer.toString()));
-            } else {
-                responseHandler.handle(new UserInfoResponse(false, buffer.toString()));
-            }
-        }));
-
-        request.exceptionHandler(event -> {
-            logger.error("An error occurs while getting userinfo from access token", event);
-            responseHandler.handle(new UserInfoResponse(false, event.getMessage()));
-        });
-
-        request.end();
+                                                   if (response.statusCode() == HttpStatusCode.OK_200) {
+                                                       responseHandler.handle(new UserInfoResponse(true, buffer.toString()));
+                                                   } else {
+                                                       responseHandler.handle(new UserInfoResponse(false, buffer.toString()));
+                                                   }
+                                               });
+                                           }
+                                       }
+                                   })
+                                           .exceptionHandler(new io.vertx.core.Handler<Throwable>() {
+                                               @Override
+                                               public void handle(Throwable event) {
+                                                   logger.error("An error occurs while introspecting access token", event);
+                                                   responseHandler.handle(new UserInfoResponse(false, event.getMessage()));
+                                               }
+                                           })
+                                   .end();
+                               }
+                           }
+                );
     }
 
     private JsonNode readPayload(String oauthPayload) {
