@@ -54,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -74,7 +75,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private ApplicationContext applicationContext;
 
-    private final Map<Context, HttpClient> httpClients = new HashMap<>();
+    private final Map<Thread, HttpClient> httpClients = new ConcurrentHashMap<>();
 
     private HttpClientOptions httpClientOptions;
 
@@ -167,7 +168,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
             }
         } else {
             HttpClient httpClient = httpClients.computeIfAbsent(
-                    Vertx.currentContext(), context -> vertx.createHttpClient(httpClientOptions));
+                    Thread.currentThread(), context -> vertx.createHttpClient(httpClientOptions));
 
             logger.debug("Introspect access token by requesting {}", introspectionEndpointURI);
 
@@ -234,7 +235,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     @Override
     public void userInfo(String accessToken, Handler<UserInfoResponse> responseHandler) {
         HttpClient httpClient = httpClients.computeIfAbsent(
-                Vertx.currentContext(), context -> vertx.createHttpClient(httpClientOptions));
+                Thread.currentThread(), context -> vertx.createHttpClient(httpClientOptions));
 
         logger.debug("Get userinfo from {}", userInfoEndpointURI);
 
