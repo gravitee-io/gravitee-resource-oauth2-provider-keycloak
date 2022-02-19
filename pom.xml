@@ -29,7 +29,7 @@
 
     <groupId>io.gravitee.resource</groupId>
     <artifactId>gravitee-resource-oauth2-provider-keycloak</artifactId>
-    <version>1.10.0-SNAPSHOT</version>
+    <version>1.10.0</version>
 
     <name>Gravitee.io APIM - Resource - OAuth2 Provider - Keycloak Adapter</name>
     <description>The resource is defined to introspect an access token provided by Keycloak.</description>
@@ -42,6 +42,8 @@
         <gravitee-node-api.version>1.4.6</gravitee-node-api.version>
         <keycloak.version>13.0.1</keycloak.version>
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
+        <!-- Property used by the publication job in CI-->
+        <publish-folder-path>graviteeio-apim/plugins/resources</publish-folder-path>
     </properties>
 
     <dependencyManagement>
