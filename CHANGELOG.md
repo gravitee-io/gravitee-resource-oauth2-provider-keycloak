@@ -3,4 +3,5 @@
 
 ### Bug Fixes
 
-* set correct version ([df2ee86](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/df2ee8695cf0210fe76bfaa555170eba76c1203d))
+* This commit doesn't fix any bugs and was made in order to  a release and so fix publication on download website.
+ ([df2ee86](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/df2ee8695cf0210fe76bfaa555170eba76c1203d))
