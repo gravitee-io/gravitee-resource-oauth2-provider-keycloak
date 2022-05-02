@@ -30,7 +30,6 @@ import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
 import java.io.ByteArrayInputStream;
@@ -39,8 +38,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
@@ -73,7 +72,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private ApplicationContext applicationContext;
 
-    private final Map<Context, HttpClient> httpClients = new HashMap<>();
+    private final Map<Thread, HttpClient> httpClients = new ConcurrentHashMap<>();
 
     private HttpClientOptions httpClientOptions;
 
@@ -171,7 +170,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
             }
         } else {
             HttpClient httpClient = httpClients.computeIfAbsent(
-                Vertx.currentContext(),
+                Thread.currentThread(),
                 context -> vertx.createHttpClient(httpClientOptions)
             );
 
@@ -254,7 +253,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     @Override
     public void userInfo(String accessToken, Handler<UserInfoResponse> responseHandler) {
-        HttpClient httpClient = httpClients.computeIfAbsent(Vertx.currentContext(), context -> vertx.createHttpClient(httpClientOptions));
+        HttpClient httpClient = httpClients.computeIfAbsent(Thread.currentThread(), context -> vertx.createHttpClient(httpClientOptions));
 
         logger.debug("Get userinfo from {}", userInfoEndpointURI);
 
