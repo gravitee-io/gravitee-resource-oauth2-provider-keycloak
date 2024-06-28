@@ -1,50 +1,45 @@
 {
-  "type" : "object",
-  "id" : "urn:jsonschema:io:gravitee:resource:oauth2:keycloak:configuration:OAuth2KeycloakResourceConfiguration",
-  "properties" : {
-    "keycloakConfiguration" : {
-      "title": "Keycloak client configuration",
-      "type" : "string",
-      "x-schema-form": {
-        "type": "codemirror",
-        "codemirrorOptions": {
-          "placeholder": "Place your Keycloak OIDC JSON client adapter configuration here.",
-          "lineWrapping": true,
-          "lineNumbers": true,
-          "allowDropFileTypes": true,
-          "autoCloseTags": true,
-          "mode": "javascript"
+    "type": "object",
+    "id": "urn:jsonschema:io:gravitee:resource:oauth2:keycloak:configuration:OAuth2KeycloakResourceConfiguration",
+    "properties": {
+        "keycloakConfiguration": {
+            "title": "Keycloak client configuration",
+            "type": "string",
+            "x-schema-form": {
+                "type": "codemirror",
+                "codemirrorOptions": {
+                    "placeholder": "Place your Keycloak OIDC JSON client adapter configuration here.",
+                    "lineWrapping": true,
+                    "lineNumbers": true,
+                    "allowDropFileTypes": true,
+                    "autoCloseTags": true,
+                    "mode": "javascript"
+                }
+            }
+        },
+        "validateTokenLocally": {
+            "title": "Local token validation",
+            "type": "boolean",
+            "default": true
+        },
+        "userClaim": {
+            "title": "User claim",
+            "description": "User claim field used to store end user on log analytics",
+            "type": "string",
+            "default": "sub"
+        },
+        "verifyHost": {
+            "title": "Verify host",
+            "description": "Of certificate on SSL connection to keycloak host",
+            "type": "boolean",
+            "default": false
+        },
+        "trustAll": {
+            "title": "Trust all",
+            "description": "Trust all certificates, including self-signed ones",
+            "type": "boolean",
+            "default": true
         }
-      }
     },
-    "validateTokenLocally" : {
-      "title": "Local token validation",
-      "type" : "boolean",
-      "default": true
-    },
-    "userClaim" : {
-      "title": "User claim",
-      "description": "User claim field used to store end user on log analytics",
-      "type": "string",
-      "default": "sub"
-    },
-    "verifyHost" : {
-      "title": "Verify host",
-      "description": "Of certificate on SSL connection to keycloak host",
-      "type" : "boolean",
-      "default": false
-    },
-    "trustAll" : {
-      "title": "Trust all",
-      "description": "Trust all certificates, including self-signed ones",
-      "type" : "boolean",
-      "default": true
-    }
-  },
-  "required": [
-    "keycloakConfiguration",
-    "validateTokenLocally",
-    "verifyHost",
-    "trustAll"
-  ]
+    "required": ["keycloakConfiguration", "validateTokenLocally", "verifyHost", "trustAll"]
 }
