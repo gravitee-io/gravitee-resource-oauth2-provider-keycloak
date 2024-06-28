@@ -18,6 +18,7 @@ package io.gravitee.resource.oauth2.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
@@ -37,7 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.context.ApplicationContext;
 
@@ -49,7 +50,7 @@ import org.springframework.context.ApplicationContext;
 public class OAuth2KeycloakResourceTest {
 
     private static final String KEYCLOAK_USERINFO_URI = "/auth/realms/Gravitee/protocol/openid-connect/userinfo";
-    private static final String KEYCLOAK_INROSPECT_TOKEN_URI = "/auth/realms/Gravitee/protocol/openid-connect/token/introspect";
+    private static final String KEYCLOAK_INTROSPECT_TOKEN_URI = "/auth/realms/Gravitee/protocol/openid-connect/token/introspect";
 
     private static final String ADAPTER_CONFIG =
         "{\n" +
@@ -64,13 +65,13 @@ public class OAuth2KeycloakResourceTest {
         "  \"confidential-port\": 0\n" +
         "}";
 
-    private static final String ACCESS_DENIDED_RESPONSE = "{\"error\": \"access_denied\"}";
+    private static final String ACCESS_DENIED_RESPONSE = "{\"error\": \"access_denied\"}";
 
     private static final String EXPECTED_USERINFO_RESPONSE =
         "{" + "\"sub\": \"248289761001\", " + "\"name\": \"Jane Doe\", " + "\"given_name\": \"Jane\"" + "}";
 
-    private static final String EXPECTED_INROSPECTION_ACTIVE_RESPONSE = "{\"active\": true}";
-    private static final String EXPECTED_INROSPECTION_NONACTIVE_RESPONSE = "{\"active\": false}";
+    private static final String EXPECTED_INTROSPECTION_ACTIVE_RESPONSE = "{\"active\": true}";
+    private static final String EXPECTED_INTROSPECTION_NONACTIVE_RESPONSE = "{\"active\": false}";
 
     private static class TestResponseHandler<T> implements Handler<T> {
 
@@ -104,25 +105,28 @@ public class OAuth2KeycloakResourceTest {
     @Mock
     private Node node;
 
-    @InjectMocks
-    private OAuth2KeycloakResource resource;
+    @Spy
+    private OAuth2KeycloakResource resource = new OAuth2KeycloakResource();
 
     @Before
     public void init() {
         initMocks(this);
-        Mockito.when(applicationContext.getBean(Vertx.class)).thenReturn(Vertx.vertx());
-        Mockito.when(applicationContext.getBean(Node.class)).thenReturn(node);
+        when(applicationContext.getBean(Vertx.class)).thenReturn(Vertx.vertx());
+        when(applicationContext.getBean(Node.class)).thenReturn(node);
+
+        resource.setApplicationContext(applicationContext);
+        when(resource.configuration()).thenReturn(configuration);
     }
 
     @Test
     public void shouldValidateAccessTokenViaIntrospectSuccessfully() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
-        Mockito.when(configuration.isValidateTokenLocally()).thenReturn(false);
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
 
         stubFor(
-            post(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
-                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INROSPECTION_ACTIVE_RESPONSE))
+            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
+                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_ACTIVE_RESPONSE))
         );
 
         resource.doStart();
@@ -135,10 +139,10 @@ public class OAuth2KeycloakResourceTest {
         assertTrue(lock.await(10000, TimeUnit.MILLISECONDS));
 
         assertTrue(handler.getResponse().isSuccess());
-        assertEquals(EXPECTED_INROSPECTION_ACTIVE_RESPONSE, handler.getResponse().getPayload());
+        assertEquals(EXPECTED_INTROSPECTION_ACTIVE_RESPONSE, handler.getResponse().getPayload());
 
         verify(
-            postRequestedFor(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
+            postRequestedFor(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
                 .withHeader(HttpHeaders.CONTENT_TYPE, equalTo(MediaType.APPLICATION_FORM_URLENCODED))
                 .withRequestBody(equalTo("token=" + accessToken))
         );
@@ -146,12 +150,12 @@ public class OAuth2KeycloakResourceTest {
 
     @Test
     public void shouldValidateAccessTokenViaIntrospectFailure401() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
-        Mockito.when(configuration.isValidateTokenLocally()).thenReturn(false);
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
 
         String accessToken = "xxxx-xxxx-xxxx-xxxx";
-        stubFor(post(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI)).willReturn(aResponse().withStatus(401)));
+        stubFor(post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI)).willReturn(aResponse().withStatus(401)));
 
         final CountDownLatch lock = new CountDownLatch(1);
 
@@ -166,7 +170,7 @@ public class OAuth2KeycloakResourceTest {
         assertTrue(handler.getResponse().getPayload().isEmpty());
 
         verify(
-            postRequestedFor(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
+            postRequestedFor(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
                 .withHeader(HttpHeaders.CONTENT_TYPE, equalTo(MediaType.APPLICATION_FORM_URLENCODED))
                 .withRequestBody(equalTo("token=" + accessToken))
         );
@@ -174,13 +178,13 @@ public class OAuth2KeycloakResourceTest {
 
     @Test
     public void shouldValidateAccessTokenViaIntrospectFailureInactive() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
-        Mockito.when(configuration.isValidateTokenLocally()).thenReturn(false);
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
 
         stubFor(
-            post(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
-                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INROSPECTION_NONACTIVE_RESPONSE))
+            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
+                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_NONACTIVE_RESPONSE))
         );
 
         final CountDownLatch lock = new CountDownLatch(1);
@@ -195,10 +199,10 @@ public class OAuth2KeycloakResourceTest {
         assertTrue(lock.await(10000, TimeUnit.MILLISECONDS));
 
         assertFalse(handler.getResponse().isSuccess());
-        assertEquals(ACCESS_DENIDED_RESPONSE, handler.getResponse().getPayload());
+        assertEquals(ACCESS_DENIED_RESPONSE, handler.getResponse().getPayload());
 
         verify(
-            postRequestedFor(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
+            postRequestedFor(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
                 .withHeader(HttpHeaders.CONTENT_TYPE, equalTo(MediaType.APPLICATION_FORM_URLENCODED))
                 .withRequestBody(equalTo("token=" + accessToken))
         );
@@ -206,11 +210,11 @@ public class OAuth2KeycloakResourceTest {
 
     @Test
     public void shouldValidateAccessTokenViaIntrospectFailureBadResponse() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
-        Mockito.when(configuration.isValidateTokenLocally()).thenReturn(false);
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
 
-        stubFor(post(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI)).willReturn(aResponse().withStatus(200).withBody("")));
+        stubFor(post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI)).willReturn(aResponse().withStatus(200).withBody("")));
 
         final CountDownLatch lock = new CountDownLatch(1);
 
@@ -224,10 +228,10 @@ public class OAuth2KeycloakResourceTest {
         assertTrue(lock.await(10000, TimeUnit.MILLISECONDS));
 
         assertFalse(handler.getResponse().isSuccess());
-        assertEquals(ACCESS_DENIDED_RESPONSE, handler.getResponse().getPayload());
+        assertEquals(ACCESS_DENIED_RESPONSE, handler.getResponse().getPayload());
 
         verify(
-            postRequestedFor(urlEqualTo(KEYCLOAK_INROSPECT_TOKEN_URI))
+            postRequestedFor(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
                 .withHeader(HttpHeaders.CONTENT_TYPE, equalTo(MediaType.APPLICATION_FORM_URLENCODED))
                 .withRequestBody(equalTo("token=" + accessToken))
         );
@@ -235,7 +239,7 @@ public class OAuth2KeycloakResourceTest {
 
     @Test
     public void shouldGetUserInfo() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
         stubFor(get(urlEqualTo(KEYCLOAK_USERINFO_URI)).willReturn(aResponse().withStatus(200).withBody(EXPECTED_USERINFO_RESPONSE)));
 
@@ -256,7 +260,7 @@ public class OAuth2KeycloakResourceTest {
 
     @Test
     public void shouldNotGetUserInfo() throws Exception {
-        Mockito.when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
 
         stubFor(get(urlEqualTo(KEYCLOAK_USERINFO_URI)).willReturn(aResponse().withStatus(401)));
 
