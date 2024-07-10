@@ -1,19 +1,14 @@
 {
     "type": "object",
-    "id": "urn:jsonschema:io:gravitee:resource:oauth2:keycloak:configuration:OAuth2KeycloakResourceConfiguration",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "properties": {
         "keycloakConfiguration": {
             "title": "Keycloak client configuration",
             "type": "string",
-            "x-schema-form": {
-                "type": "codemirror",
-                "codemirrorOptions": {
-                    "placeholder": "Place your Keycloak OIDC JSON client adapter configuration here.",
-                    "lineWrapping": true,
-                    "lineNumbers": true,
-                    "allowDropFileTypes": true,
-                    "autoCloseTags": true,
-                    "mode": "javascript"
+            "format": "gio-code-editor",
+            "gioConfig": {
+                "monacoEditorConfig": {
+                    "language": "json"
                 }
             }
         },
