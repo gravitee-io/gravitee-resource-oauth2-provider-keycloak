@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.0.0...2.1.0) (2024-07-11)
+
+
+### Features
+
+* rework schema-form to use new GioJsonSchema Ui component ([3b28e3d](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/3b28e3ddea56eff7b6c72ebdb99682029df18c2f))
+
 # [2.0.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/1.9.2...2.0.0) (2024-06-28)
 
 
