@@ -41,7 +41,7 @@
         <gravitee-resource-oauth2-provider-api.version>1.4.0</gravitee-resource-oauth2-provider-api.version>
         <gravitee-node-api.version>4.8.7</gravitee-node-api.version>
         <keycloak.version>24.0.5</keycloak.version>
-        <jboss-logging.version>3.5.3.Final</jboss-logging.version>
+        <jboss-logging.version>3.6.0.Final</jboss-logging.version>
         <httpclient.version>4.5.14</httpclient.version>
         <wiremock.version>3.9.0</wiremock.version>
 
