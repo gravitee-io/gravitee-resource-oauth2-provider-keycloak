@@ -43,7 +43,7 @@
         <keycloak.version>24.0.5</keycloak.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <wiremock.version>3.9.0</wiremock.version>
+        <wiremock.version>3.9.1</wiremock.version>
 
         <maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
         <!-- Property used by the publication job in CI-->
