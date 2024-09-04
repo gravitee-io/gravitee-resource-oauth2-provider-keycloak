@@ -37,7 +37,7 @@
     <properties>
         <gravitee-bom.version>6.0.47</gravitee-bom.version>
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
-        <gravitee-gateway-api.version>3.6.0</gravitee-gateway-api.version>
+        <gravitee-gateway-api.version>3.7.0</gravitee-gateway-api.version>
         <gravitee-resource-oauth2-provider-api.version>1.4.0</gravitee-resource-oauth2-provider-api.version>
         <gravitee-node-api.version>4.8.7</gravitee-node-api.version>
         <keycloak.version>24.0.5</keycloak.version>
