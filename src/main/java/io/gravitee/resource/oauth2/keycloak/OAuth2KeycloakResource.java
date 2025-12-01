@@ -26,6 +26,7 @@ import io.gravitee.gateway.api.handler.Handler;
 import io.gravitee.node.api.Node;
 import io.gravitee.node.api.utils.NodeUtils;
 import io.gravitee.resource.oauth2.api.OAuth2Resource;
+import io.gravitee.resource.oauth2.api.OAuth2ResourceMetadata;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
@@ -38,8 +39,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.AccessLevel;
+import lombok.Setter;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
@@ -84,7 +88,9 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    @Setter(AccessLevel.PACKAGE)
     private String realmUrl;
+
     private KeycloakDeployment keycloakDeployment;
     private boolean checkTokenLocally;
 
@@ -338,5 +344,10 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
+    }
+
+    @Override
+    public OAuth2ResourceMetadata getProtectedResourceMetadata(String protectedResourceUri) {
+        return new OAuth2ResourceMetadata(protectedResourceUri, List.of(realmUrl), null);
     }
 }
