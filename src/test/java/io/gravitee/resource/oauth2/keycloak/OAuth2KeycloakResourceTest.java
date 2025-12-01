@@ -25,6 +25,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.gravitee.common.http.MediaType;
 import io.gravitee.gateway.api.handler.Handler;
 import io.gravitee.node.api.Node;
+import io.gravitee.resource.oauth2.api.OAuth2ResourceMetadata;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
@@ -36,7 +37,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -276,5 +276,16 @@ public class OAuth2KeycloakResourceTest {
         assertFalse(handler.getResponse().isSuccess());
 
         verify(getRequestedFor(urlEqualTo(KEYCLOAK_USERINFO_URI)));
+    }
+
+    @Test
+    public void testGetProtectedResourceMetadata() {
+        OAuth2KeycloakResource resource = new OAuth2KeycloakResource();
+        resource.setRealmUrl("https://some.keycloak.com/realms/test");
+        OAuth2ResourceMetadata resourceMetadata = resource.getProtectedResourceMetadata("https://backend.com");
+        assertEquals("https://backend.com", resourceMetadata.protectedResourceUri());
+        assertEquals("https://some.keycloak.com/realms/test", resourceMetadata.authorizationServers().get(0));
+        assertEquals(1, resourceMetadata.authorizationServers().size());
+        assertNull(resourceMetadata.scopesSupported());
     }
 }
