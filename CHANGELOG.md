@@ -1,3 +1,20 @@
+# [3.0.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.1.0...3.0.0-alpha.1) (2025-12-05)
+
+
+### Documentation
+
+* update the README.adoc file after breaking change ([6ea6071](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/6ea6071f83d489fc3b4815770f7302f994896d99))
+
+
+### Features
+
+* add the OAuth2KeycloakResource.getProtectedResourceMetadata() method ([2127f74](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/2127f744c98be4fe5b3447c98e67b4caf810a14c))
+
+
+### BREAKING CHANGES
+
+* require APIM 4.10.x
+
 # [2.1.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.0.0...2.1.0) (2024-07-11)
 
 
