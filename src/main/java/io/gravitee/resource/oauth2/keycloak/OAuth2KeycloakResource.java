@@ -125,15 +125,11 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         introspectionEndpointAuthorization =
             AUTHORIZATION_HEADER_BASIC_SCHEME +
-            Base64
-                .getEncoder()
-                .encodeToString(
-                    (
-                        adapterConfig.getResource() +
-                        AUTHORIZATION_HEADER_VALUE_BASE64_SEPARATOR +
-                        adapterConfig.getCredentials().get("secret")
-                    ).getBytes()
-                );
+            Base64.getEncoder().encodeToString(
+                (adapterConfig.getResource() +
+                    AUTHORIZATION_HEADER_VALUE_BASE64_SEPARATOR +
+                    adapterConfig.getCredentials().get("secret")).getBytes()
+            );
 
         // Prepare userinfo endpoint calls
         userInfoEndpointURI = introspectionUri.getPath() + KEYCLOAK_USERINFO_ENDPOINT;
@@ -175,9 +171,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 logger.error("Unable to transform access token", e);
             }
         } else {
-            HttpClient httpClient = httpClients.computeIfAbsent(
-                Thread.currentThread(),
-                context -> vertx.createHttpClient(httpClientOptions)
+            HttpClient httpClient = httpClients.computeIfAbsent(Thread.currentThread(), context ->
+                vertx.createHttpClient(httpClientOptions)
             );
 
             logger.debug("Introspect access token by requesting {}", introspectionEndpointURI);

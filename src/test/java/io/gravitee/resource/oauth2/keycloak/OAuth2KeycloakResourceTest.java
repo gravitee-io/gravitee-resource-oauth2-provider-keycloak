@@ -125,8 +125,9 @@ public class OAuth2KeycloakResourceTest {
         when(configuration.isValidateTokenLocally()).thenReturn(false);
 
         stubFor(
-            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
-                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_ACTIVE_RESPONSE))
+            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI)).willReturn(
+                aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_ACTIVE_RESPONSE)
+            )
         );
 
         resource.doStart();
@@ -183,8 +184,9 @@ public class OAuth2KeycloakResourceTest {
         when(configuration.isValidateTokenLocally()).thenReturn(false);
 
         stubFor(
-            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI))
-                .willReturn(aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_NONACTIVE_RESPONSE))
+            post(urlEqualTo(KEYCLOAK_INTROSPECT_TOKEN_URI)).willReturn(
+                aResponse().withStatus(200).withBody(EXPECTED_INTROSPECTION_NONACTIVE_RESPONSE)
+            )
         );
 
         final CountDownLatch lock = new CountDownLatch(1);
