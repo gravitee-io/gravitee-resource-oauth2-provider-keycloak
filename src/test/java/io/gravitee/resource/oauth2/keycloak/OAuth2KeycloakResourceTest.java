@@ -288,6 +288,6 @@ public class OAuth2KeycloakResourceTest {
         assertEquals("https://backend.com", resourceMetadata.protectedResourceUri());
         assertEquals("https://some.keycloak.com/realms/test", resourceMetadata.authorizationServers().get(0));
         assertEquals(1, resourceMetadata.authorizationServers().size());
-        assertNull(resourceMetadata.scopesSupported());
+        assertTrue(resourceMetadata.scopesSupported().isEmpty());
     }
 }
