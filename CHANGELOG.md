@@ -1,3 +1,10 @@
+# [3.0.0-alpha.2](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.0-alpha.1...3.0.0-alpha.2) (2025-12-09)
+
+
+### Bug Fixes
+
+* return an empty list instead of null for the OAuth2ResourceMetadata.scopesSupported ([cd4498d](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/cd4498d049416783bec28903838fe97fba4caf1f))
+
 # [3.0.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.1.0...3.0.0-alpha.1) (2025-12-05)
 
 
