@@ -1,3 +1,25 @@
+# [3.0.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.1.0...3.0.0) (2025-12-11)
+
+
+### Bug Fixes
+
+* return an empty list instead of null for the OAuth2ResourceMetadata.scopesSupported ([2647bd2](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/2647bd2c185501211a037007055e073648ab6193))
+
+
+### Documentation
+
+* update the README.adoc file after breaking change ([3605eec](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/3605eece7344c7e153e3bbecd19cf1e5dbb28c5e))
+
+
+### Features
+
+* add the OAuth2KeycloakResource.getProtectedResourceMetadata() method ([33a2ab4](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/33a2ab49696dceb8f26e375f40a5d3af94de1644))
+
+
+### BREAKING CHANGES
+
+* require APIM 4.10.x
+
 # [3.0.0-alpha.2](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.0-alpha.1...3.0.0-alpha.2) (2025-12-09)
 
 
