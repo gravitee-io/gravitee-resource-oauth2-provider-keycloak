@@ -44,7 +44,7 @@
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <httpclient.version>4.5.14</httpclient.version>
         <wiremock.version>3.9.1</wiremock.version>
-        <bouncy-castle.version>1.78</bouncy-castle.version>
+        <bouncy-castle.version>1.83</bouncy-castle.version>
 
         <maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
         <!-- Property used by the publication job in CI-->
