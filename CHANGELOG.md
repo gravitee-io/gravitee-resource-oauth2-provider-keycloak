@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.0...3.0.1) (2026-04-15)
+
+
+### Bug Fixes
+
+* include the scopes when returning the protected resource metadata from the oauth2 policy ([b9c3c78](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/b9c3c7860614212a04fdff09596d23e2a20c9513))
+
 # [3.0.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/2.1.0...3.0.0) (2025-12-11)
 
 
