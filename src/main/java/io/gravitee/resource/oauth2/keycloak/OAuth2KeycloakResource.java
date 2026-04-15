@@ -342,7 +342,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     }
 
     @Override
-    public OAuth2ResourceMetadata getProtectedResourceMetadata(String protectedResourceUri) {
-        return new OAuth2ResourceMetadata(protectedResourceUri, List.of(realmUrl), List.of());
+    public OAuth2ResourceMetadata getProtectedResourceMetadata(String protectedResourceUri, List<String> scopesSupported) {
+        return new OAuth2ResourceMetadata(protectedResourceUri, List.of(realmUrl), scopesSupported);
     }
 }
