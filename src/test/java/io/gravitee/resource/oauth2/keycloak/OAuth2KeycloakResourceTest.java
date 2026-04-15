@@ -30,6 +30,7 @@ import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.Vertx;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHeaders;
@@ -281,13 +282,25 @@ public class OAuth2KeycloakResourceTest {
     }
 
     @Test
-    public void testGetProtectedResourceMetadata() {
+    public void testGetProtectedResourceMetadataWithNoScopes() {
         OAuth2KeycloakResource resource = new OAuth2KeycloakResource();
         resource.setRealmUrl("https://some.keycloak.com/realms/test");
-        OAuth2ResourceMetadata resourceMetadata = resource.getProtectedResourceMetadata("https://backend.com");
+        OAuth2ResourceMetadata resourceMetadata = resource.getProtectedResourceMetadata("https://backend.com", List.of());
         assertEquals("https://backend.com", resourceMetadata.protectedResourceUri());
         assertEquals("https://some.keycloak.com/realms/test", resourceMetadata.authorizationServers().get(0));
         assertEquals(1, resourceMetadata.authorizationServers().size());
         assertTrue(resourceMetadata.scopesSupported().isEmpty());
+    }
+
+    @Test
+    public void testGetProtectedResourceMetadataWithScopes() {
+        OAuth2KeycloakResource resource = new OAuth2KeycloakResource();
+        resource.setRealmUrl("https://some.keycloak.com/realms/test");
+        List<String> scopes = List.of("read", "write", "admin");
+        OAuth2ResourceMetadata resourceMetadata = resource.getProtectedResourceMetadata("https://backend.com", scopes);
+        assertEquals("https://backend.com", resourceMetadata.protectedResourceUri());
+        assertEquals("https://some.keycloak.com/realms/test", resourceMetadata.authorizationServers().get(0));
+        assertEquals(1, resourceMetadata.authorizationServers().size());
+        assertEquals(scopes, resourceMetadata.scopesSupported());
     }
 }
