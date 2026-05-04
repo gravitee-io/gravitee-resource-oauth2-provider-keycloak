@@ -26,9 +26,12 @@ import io.gravitee.gateway.api.handler.Handler;
 import io.gravitee.node.api.Node;
 import io.gravitee.node.api.utils.NodeUtils;
 import io.gravitee.resource.oauth2.api.OAuth2Resource;
+import io.gravitee.resource.oauth2.api.OAuth2ResourceException;
 import io.gravitee.resource.oauth2.api.OAuth2ResourceMetadata;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeRequest;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Vertx;
@@ -37,11 +40,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.keycloak.adapters.KeycloakDeployment;
@@ -67,6 +73,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private static final String KEYCLOAK_INTROSPECTION_ENDPOINT = "/protocol/openid-connect/token/introspect";
     private static final String KEYCLOAK_USERINFO_ENDPOINT = "/protocol/openid-connect/userinfo";
+    private static final String KEYCLOAK_TOKEN_ENDPOINT = "/protocol/openid-connect/token";
+    private static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
 
     private static final String HTTPS_SCHEME = "https";
 
@@ -85,6 +93,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     private String introspectionEndpointURI;
     private String introspectionEndpointAuthorization;
     private String userInfoEndpointURI;
+    private String tokenEndpointURI;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -136,6 +145,9 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         // Prepare introspection endpoint calls
         introspectionEndpointURI = introspectionUri.getPath() + KEYCLOAK_INTROSPECTION_ENDPOINT;
+
+        // Prepare token exchange endpoint calls — store full absolute URI for Vertx 5 compatibility
+        tokenEndpointURI = realmUrl + KEYCLOAK_TOKEN_ENDPOINT;
         userAgent = NodeUtils.userAgent(applicationContext.getBean(Node.class));
         vertx = applicationContext.getBean(Vertx.class);
     }
@@ -250,6 +262,101 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                     }
                 );
         }
+    }
+
+    @Override
+    public void tokenExchange(TokenExchangeRequest tokenExchangeRequest, Handler<TokenExchangeResponse> responseHandler) {
+        // ⚠️ Workaround solution
+        // Vertx 5 removed createHttpClient() overloads; use java.net.http.HttpClient on a worker thread instead.
+        logger.debug("Exchange token by requesting {}", tokenEndpointURI);
+
+        String formBody = toFormBody(tokenExchangeRequest);
+
+        vertx
+            .<String>executeBlocking(() -> {
+                java.net.http.HttpClient javaHttpClient = java.net.http.HttpClient.newHttpClient();
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(tokenEndpointURI))
+                    .header("Content-Type", MediaType.APPLICATION_FORM_URLENCODED)
+                    .header("Authorization", introspectionEndpointAuthorization)
+                    .header("Accept", MediaType.APPLICATION_JSON)
+                    .header("User-Agent", userAgent)
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(formBody))
+                    .build();
+
+                java.net.http.HttpResponse<String> response = javaHttpClient.send(
+                    request,
+                    java.net.http.HttpResponse.BodyHandlers.ofString()
+                );
+
+                logger.debug("Keycloak token endpoint returns a response with a {} status code", response.statusCode());
+
+                if (response.statusCode() == HttpStatusCode.OK_200) {
+                    return response.body();
+                } else {
+                    throw new OAuth2ResourceException(response.body());
+                }
+            })
+            .onSuccess(body -> handleTokenExchangeSuccess(body, responseHandler))
+            .onFailure(err -> {
+                logger.error("An error occurs while exchanging OAuth2 token", err);
+                responseHandler.handle(new TokenExchangeResponse(err));
+            });
+    }
+
+    private void handleTokenExchangeSuccess(String body, Handler<TokenExchangeResponse> responseHandler) {
+        try {
+            JsonNode payload = MAPPER.readTree(body);
+            TokenExchangeResponse.Builder responseBuilder = TokenExchangeResponse.builder(
+                payload.path("access_token").asText(),
+                payload.path("issued_token_type").asText(),
+                payload.path("token_type").asText()
+            );
+
+            if (payload.hasNonNull("expires_in")) {
+                responseBuilder.expiresIn(payload.path("expires_in").asLong());
+            }
+            if (payload.hasNonNull("scope")) {
+                responseBuilder.scope(payload.path("scope").asText());
+            }
+            if (payload.hasNonNull("refresh_token")) {
+                responseBuilder.refreshToken(payload.path("refresh_token").asText());
+            }
+
+            responseHandler.handle(responseBuilder.build());
+        } catch (IOException ioe) {
+            logger.error("Unable to parse token exchange response payload: {}", body, ioe);
+            responseHandler.handle(new TokenExchangeResponse(ioe));
+        }
+    }
+
+    private String toFormBody(TokenExchangeRequest tokenExchangeRequest) {
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put("grant_type", TOKEN_EXCHANGE_GRANT_TYPE);
+        form.put("subject_token", tokenExchangeRequest.getSubjectToken());
+        form.put("subject_token_type", tokenExchangeRequest.getSubjectTokenType());
+        putIfPresent(form, "resource", tokenExchangeRequest.getResource());
+        putIfPresent(form, "audience", tokenExchangeRequest.getAudience());
+        putIfPresent(form, "scope", tokenExchangeRequest.getScope());
+        putIfPresent(form, "requested_token_type", tokenExchangeRequest.getRequestedTokenType());
+        putIfPresent(form, "actor_token", tokenExchangeRequest.getActorToken());
+        putIfPresent(form, "actor_token_type", tokenExchangeRequest.getActorTokenType());
+
+        return form
+            .entrySet()
+            .stream()
+            .map(entry -> urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
+            .collect(Collectors.joining("&"));
+    }
+
+    private void putIfPresent(Map<String, String> form, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            form.put(key, value);
+        }
+    }
+
+    private String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     @Override
