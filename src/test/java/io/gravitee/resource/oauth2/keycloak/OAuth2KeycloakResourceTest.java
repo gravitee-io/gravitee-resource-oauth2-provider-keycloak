@@ -28,6 +28,8 @@ import io.gravitee.node.api.Node;
 import io.gravitee.resource.oauth2.api.OAuth2ResourceMetadata;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeRequest;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.Vertx;
 import java.util.List;
@@ -52,6 +54,7 @@ public class OAuth2KeycloakResourceTest {
 
     private static final String KEYCLOAK_USERINFO_URI = "/auth/realms/Gravitee/protocol/openid-connect/userinfo";
     private static final String KEYCLOAK_INTROSPECT_TOKEN_URI = "/auth/realms/Gravitee/protocol/openid-connect/token/introspect";
+    private static final String KEYCLOAK_TOKEN_URI = "/auth/realms/Gravitee/protocol/openid-connect/token";
 
     private static final String ADAPTER_CONFIG =
         "{\n" +
@@ -73,6 +76,15 @@ public class OAuth2KeycloakResourceTest {
 
     private static final String EXPECTED_INTROSPECTION_ACTIVE_RESPONSE = "{\"active\": true}";
     private static final String EXPECTED_INTROSPECTION_NONACTIVE_RESPONSE = "{\"active\": false}";
+    private static final String EXPECTED_TOKEN_EXCHANGE_RESPONSE =
+        "{" +
+        "\"access_token\":\"exchanged-token\"," +
+        "\"issued_token_type\":\"urn:ietf:params:oauth:token-type:access_token\"," +
+        "\"token_type\":\"Bearer\"," +
+        "\"expires_in\":300," +
+        "\"scope\":\"mcp:tools\"," +
+        "\"refresh_token\":\"refresh-token\"" +
+        "}";
 
     private static class TestResponseHandler<T> implements Handler<T> {
 
@@ -279,6 +291,72 @@ public class OAuth2KeycloakResourceTest {
         assertFalse(handler.getResponse().isSuccess());
 
         verify(getRequestedFor(urlEqualTo(KEYCLOAK_USERINFO_URI)));
+    }
+
+    @Test
+    public void shouldExchangeToken() throws Exception {
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
+
+        stubFor(post(urlEqualTo(KEYCLOAK_TOKEN_URI)).willReturn(aResponse().withStatus(200).withBody(EXPECTED_TOKEN_EXCHANGE_RESPONSE)));
+
+        resource.doStart();
+
+        final CountDownLatch lock = new CountDownLatch(1);
+        final TestResponseHandler<TokenExchangeResponse> handler = new TestResponseHandler<>(lock);
+
+        TokenExchangeRequest request = TokenExchangeRequest.builder("subject-token", TokenExchangeRequest.TOKEN_TYPE_ACCESS_TOKEN)
+            .audience("mcp-upstream")
+            .scope("mcp:tools")
+            .requestedTokenType(TokenExchangeRequest.TOKEN_TYPE_ACCESS_TOKEN)
+            .build();
+
+        resource.tokenExchange(request, handler);
+        assertTrue(lock.await(10000, TimeUnit.MILLISECONDS));
+
+        assertTrue(handler.getResponse().isSuccess());
+        assertEquals("exchanged-token", handler.getResponse().getAccessToken());
+        assertEquals(TokenExchangeRequest.TOKEN_TYPE_ACCESS_TOKEN, handler.getResponse().getIssuedTokenType());
+        assertEquals("Bearer", handler.getResponse().getTokenType());
+        assertEquals(Long.valueOf(300), handler.getResponse().getExpiresIn());
+        assertEquals("mcp:tools", handler.getResponse().getScope());
+        assertEquals("refresh-token", handler.getResponse().getRefreshToken());
+
+        verify(
+            postRequestedFor(urlEqualTo(KEYCLOAK_TOKEN_URI))
+                .withHeader(HttpHeaders.CONTENT_TYPE, equalTo(MediaType.APPLICATION_FORM_URLENCODED))
+                .withHeader(HttpHeaders.AUTHORIZATION, matching("Basic .*"))
+                .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange"))
+                .withRequestBody(containing("subject_token=subject-token"))
+                .withRequestBody(containing("subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"))
+                .withRequestBody(containing("requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"))
+                .withRequestBody(containing("audience=mcp-upstream"))
+                .withRequestBody(containing("scope=mcp%3Atools"))
+        );
+    }
+
+    @Test
+    public void shouldFailTokenExchange() throws Exception {
+        when(configuration.getKeycloakConfiguration()).thenReturn(String.format(ADAPTER_CONFIG, wireMockRule.port()));
+        when(configuration.isValidateTokenLocally()).thenReturn(false);
+
+        stubFor(post(urlEqualTo(KEYCLOAK_TOKEN_URI)).willReturn(aResponse().withStatus(400).withBody("{\"error\":\"invalid_request\"}")));
+
+        resource.doStart();
+
+        final CountDownLatch lock = new CountDownLatch(1);
+        final TestResponseHandler<TokenExchangeResponse> handler = new TestResponseHandler<>(lock);
+
+        resource.tokenExchange(
+            TokenExchangeRequest.builder("subject-token", TokenExchangeRequest.TOKEN_TYPE_ACCESS_TOKEN).build(),
+            handler
+        );
+        assertTrue(lock.await(10000, TimeUnit.MILLISECONDS));
+
+        assertFalse(handler.getResponse().isSuccess());
+        assertNotNull(handler.getResponse().getThrowable());
+
+        verify(postRequestedFor(urlEqualTo(KEYCLOAK_TOKEN_URI)).withRequestBody(containing("subject_token=subject-token")));
     }
 
     @Test
