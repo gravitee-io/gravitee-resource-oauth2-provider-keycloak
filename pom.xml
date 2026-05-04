@@ -35,10 +35,7 @@
     <description>The resource is defined to introspect an access token provided by Keycloak.</description>
 
     <properties>
-        <gravitee-apim.version>4.12.0-milestone.6</gravitee-apim.version>
-
-        <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
-        <gravitee-resource-oauth2-provider-api.version>1.5.1</gravitee-resource-oauth2-provider-api.version>
+        <gravitee-apim.version>4.12.18</gravitee-apim.version>
 
         <keycloak.version>25.0.3</keycloak.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -67,7 +64,6 @@
         <dependency>
             <groupId>io.gravitee.resource</groupId>
             <artifactId>gravitee-resource-api</artifactId>
-            <version>${gravitee-resource-api.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -80,7 +76,6 @@
         <dependency>
             <groupId>io.gravitee.resource</groupId>
             <artifactId>gravitee-resource-oauth2-provider-api</artifactId>
-            <version>${gravitee-resource-oauth2-provider-api.version}</version>
             <scope>provided</scope>
         </dependency>
 

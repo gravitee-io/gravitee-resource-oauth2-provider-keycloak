@@ -26,9 +26,12 @@ import io.gravitee.gateway.api.handler.Handler;
 import io.gravitee.node.api.Node;
 import io.gravitee.node.api.utils.NodeUtils;
 import io.gravitee.resource.oauth2.api.OAuth2Resource;
+import io.gravitee.resource.oauth2.api.OAuth2ResourceException;
 import io.gravitee.resource.oauth2.api.OAuth2ResourceMetadata;
 import io.gravitee.resource.oauth2.api.OAuth2Response;
 import io.gravitee.resource.oauth2.api.openid.UserInfoResponse;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeRequest;
+import io.gravitee.resource.oauth2.api.tokenexchange.TokenExchangeResponse;
 import io.gravitee.resource.oauth2.keycloak.configuration.OAuth2KeycloakResourceConfiguration;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.*;
@@ -36,11 +39,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.CustomLog;
 import lombok.Setter;
@@ -64,6 +70,8 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
     private static final String KEYCLOAK_INTROSPECTION_ENDPOINT = "/protocol/openid-connect/token/introspect";
     private static final String KEYCLOAK_USERINFO_ENDPOINT = "/protocol/openid-connect/userinfo";
+    private static final String KEYCLOAK_TOKEN_ENDPOINT = "/protocol/openid-connect/token";
+    private static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
 
     private static final String HTTPS_SCHEME = "https";
 
@@ -82,6 +90,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     private String introspectionEndpointURI;
     private String introspectionEndpointAuthorization;
     private String userInfoEndpointURI;
+    private String tokenEndpointURI;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -133,6 +142,9 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
 
         // Prepare introspection endpoint calls
         introspectionEndpointURI = introspectionUri.getPath() + KEYCLOAK_INTROSPECTION_ENDPOINT;
+
+        // Prepare token exchange endpoint calls
+        tokenEndpointURI = introspectionUri.getPath() + KEYCLOAK_TOKEN_ENDPOINT;
         userAgent = NodeUtils.userAgent(applicationContext.getBean(Node.class));
         vertx = applicationContext.getBean(Vertx.class);
     }
@@ -206,6 +218,148 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                     responseHandler.handle(new OAuth2Response(false, throwable.getMessage()));
                 });
         }
+    }
+
+    @Override
+    public void tokenExchange(TokenExchangeRequest tokenExchangeRequest, Handler<TokenExchangeResponse> responseHandler) {
+        String validationError = validateTokenExchangeRequest(tokenExchangeRequest);
+        if (validationError != null) {
+            responseHandler.handle(new TokenExchangeResponse(new IllegalArgumentException(validationError)));
+            return;
+        }
+
+        HttpClient httpClient = httpClients.computeIfAbsent(Thread.currentThread(), context -> vertx.createHttpClient(httpClientOptions));
+
+        log.debug("Exchange token by requesting {}", tokenEndpointURI);
+
+        final RequestOptions reqOptions = new RequestOptions()
+            .setMethod(HttpMethod.POST)
+            .setURI(tokenEndpointURI)
+            .putHeader(HttpHeaders.USER_AGENT, userAgent)
+            .putHeader("X-Gravitee-Request-Id", UUID.toString(UUID.random()))
+            .putHeader(HttpHeaders.AUTHORIZATION, introspectionEndpointAuthorization)
+            .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
+            .putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED);
+
+        httpClient
+            .request(reqOptions)
+            .compose(request -> request.send(toFormBody(tokenExchangeRequest)))
+            .compose(response -> response.body().map(buffer -> new HttpResult(response.statusCode(), buffer.toString())))
+            .onSuccess(result -> {
+                log.debug("Keycloak token endpoint returns a response with a {} status code", result.statusCode());
+                if (result.statusCode() == HttpStatusCode.OK_200) {
+                    handleTokenExchangeSuccess(result.body(), responseHandler);
+                } else {
+                    handleTokenExchangeError(result.statusCode(), result.body(), responseHandler);
+                }
+            })
+            .onFailure(throwable -> {
+                log.error("An error occurs while exchanging OAuth2 token", throwable);
+                responseHandler.handle(new TokenExchangeResponse(throwable));
+            });
+    }
+
+    /**
+     * @return a message describing why the request cannot be performed, or {@code null} when it is valid.
+     */
+    private String validateTokenExchangeRequest(TokenExchangeRequest tokenExchangeRequest) {
+        if (tokenExchangeRequest == null) {
+            return "tokenExchangeRequest cannot be null";
+        }
+        if (tokenExchangeRequest.getSubjectToken() == null || tokenExchangeRequest.getSubjectToken().isBlank()) {
+            return "subject_token is required";
+        }
+        if (tokenExchangeRequest.getSubjectTokenType() == null || tokenExchangeRequest.getSubjectTokenType().isBlank()) {
+            return "subject_token_type is required";
+        }
+        return null;
+    }
+
+    private void handleTokenExchangeSuccess(String body, Handler<TokenExchangeResponse> responseHandler) {
+        JsonNode payload = readPayload(body);
+        if (payload == null) {
+            responseHandler.handle(new TokenExchangeResponse(new OAuth2ResourceException("Unable to parse token exchange response")));
+            return;
+        }
+
+        String accessToken = payload.path("access_token").asText(null);
+        if (accessToken == null) {
+            responseHandler.handle(
+                new TokenExchangeResponse(new OAuth2ResourceException("Token exchange response does not contain an access_token"))
+            );
+            return;
+        }
+
+        TokenExchangeResponse.Builder responseBuilder = TokenExchangeResponse.builder(
+            accessToken,
+            payload.path("issued_token_type").asText(null),
+            payload.path("token_type").asText(null)
+        );
+
+        if (payload.hasNonNull("expires_in")) {
+            responseBuilder.expiresIn(payload.path("expires_in").asLong());
+        }
+        if (payload.hasNonNull("scope")) {
+            responseBuilder.scope(payload.path("scope").asText());
+        }
+        if (payload.hasNonNull("refresh_token")) {
+            responseBuilder.refreshToken(payload.path("refresh_token").asText());
+        }
+
+        responseHandler.handle(responseBuilder.build());
+    }
+
+    /**
+     * Surfaces the OAuth error returned by Keycloak (RFC 6749 section 5.2, referenced by RFC 8693
+     * section 2.2.2) instead of a generic failure, so a misconfigured exchange can be diagnosed from the
+     * policy error without reading the gateway logs.
+     */
+    private void handleTokenExchangeError(int statusCode, String body, Handler<TokenExchangeResponse> responseHandler) {
+        String detail = null;
+        JsonNode payload = readPayload(body);
+        if (payload != null) {
+            String error = payload.path("error").asText(null);
+            if (error != null) {
+                String description = payload.path("error_description").asText(null);
+                detail = description != null ? error + ": " + description : error;
+            }
+        }
+
+        String message = detail != null
+            ? "An error occurs while exchanging OAuth2 token (" + statusCode + " " + detail + ")"
+            : "An error occurs while exchanging OAuth2 token (" + statusCode + ")";
+
+        log.error("An error occurs while exchanging OAuth2 token. Request ends with status {}: {}", statusCode, detail);
+        responseHandler.handle(new TokenExchangeResponse(new OAuth2ResourceException(message)));
+    }
+
+    private String toFormBody(TokenExchangeRequest tokenExchangeRequest) {
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put("grant_type", TOKEN_EXCHANGE_GRANT_TYPE);
+        form.put("subject_token", tokenExchangeRequest.getSubjectToken());
+        form.put("subject_token_type", tokenExchangeRequest.getSubjectTokenType());
+        putIfPresent(form, "resource", tokenExchangeRequest.getResource());
+        putIfPresent(form, "audience", tokenExchangeRequest.getAudience());
+        putIfPresent(form, "scope", tokenExchangeRequest.getScope());
+        putIfPresent(form, "requested_token_type", tokenExchangeRequest.getRequestedTokenType());
+        putIfPresent(form, "actor_token", tokenExchangeRequest.getActorToken());
+        putIfPresent(form, "actor_token_type", tokenExchangeRequest.getActorTokenType());
+
+        return form
+            .entrySet()
+            .stream()
+            .map(entry -> urlEncode(entry.getKey()) + "=" + urlEncode(entry.getValue()))
+            .collect(Collectors.joining("&"));
+    }
+
+    private void putIfPresent(Map<String, String> form, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            form.put(key, value);
+        }
+    }
+
+    private String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     @Override
