@@ -20,7 +20,8 @@ If not, the resource is calling the introspection endpoint at `http://keycloak_h
 |===
 |Plugin version | APIM version
 
-|4.0 and upper                  | 4.12.x to latest
+|5.0 and upper                  | 4.12.18 to latest
+|4.0 and upper                  | 4.12.x to 4.12.17
 |3.0 and upper                  | 4.10.x to 4.11.x
 |2.0 and upper                  | until 4.9.x
 |===
