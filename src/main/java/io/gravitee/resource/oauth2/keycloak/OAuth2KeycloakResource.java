@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.AccessLevel;
+import lombok.CustomLog;
 import lombok.Setter;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
@@ -50,8 +51,6 @@ import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.util.JsonSerialization;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -60,9 +59,8 @@ import org.springframework.context.ApplicationContextAware;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
+@CustomLog
 public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourceConfiguration> implements ApplicationContextAware {
-
-    private final Logger logger = LoggerFactory.getLogger(OAuth2KeycloakResource.class);
 
     private static final String KEYCLOAK_INTROSPECTION_ENDPOINT = "/protocol/openid-connect/token/introspect";
     private static final String KEYCLOAK_USERINFO_ENDPOINT = "/protocol/openid-connect/userinfo";
@@ -99,7 +97,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     protected void doStart() throws Exception {
         super.doStart();
 
-        logger.info("Starting a Keycloak Adapter resource");
+        log.info("Starting a Keycloak Adapter resource");
 
         checkTokenLocally = configuration().isValidateTokenLocally();
         InputStream configStream = new ByteArrayInputStream(configuration().getKeycloakConfiguration().getBytes(StandardCharsets.UTF_8));
@@ -148,7 +146,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 try {
                     httpClient.close();
                 } catch (IllegalStateException ise) {
-                    logger.warn(ise.getMessage());
+                    log.warn(ise.getMessage());
                 }
             });
     }
@@ -164,17 +162,17 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 tokenMetadata.put("username", token.getPreferredUsername());
                 responseHandler.handle(new OAuth2Response(true, MAPPER.writeValueAsString(tokenMetadata)));
             } catch (VerificationException ve) {
-                logger.error("Unable to verify access token", ve);
+                log.error("Unable to verify access token", ve);
                 responseHandler.handle(new OAuth2Response(false, "{\"error\": \"access_denied\"}"));
             } catch (IOException e) {
-                logger.error("Unable to transform access token", e);
+                log.error("Unable to transform access token", e);
             }
         } else {
             HttpClient httpClient = httpClients.computeIfAbsent(Thread.currentThread(), context ->
                 vertx.createHttpClient(httpClientOptions)
             );
 
-            logger.debug("Introspect access token by requesting {}", introspectionEndpointURI);
+            log.debug("Introspect access token by requesting {}", introspectionEndpointURI);
 
             final RequestOptions reqOptions = new RequestOptions()
                 .setMethod(HttpMethod.POST)
@@ -190,7 +188,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 .compose(request -> request.send("token=" + accessToken))
                 .compose(response -> response.body().map(buffer -> new HttpResult(response.statusCode(), buffer.toString())))
                 .onSuccess(result -> {
-                    logger.debug("Keycloak introspection endpoint returns a response with a {} status code", result.statusCode());
+                    log.debug("Keycloak introspection endpoint returns a response with a {} status code", result.statusCode());
                     if (result.statusCode() == HttpStatusCode.OK_200) {
                         JsonNode introspectPayload = readPayload(result.body());
                         boolean active = introspectPayload != null && introspectPayload.path("active").asBoolean(false);
@@ -204,7 +202,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                     }
                 })
                 .onFailure(throwable -> {
-                    logger.error("An error occurs while introspecting access token", throwable);
+                    log.error("An error occurs while introspecting access token", throwable);
                     responseHandler.handle(new OAuth2Response(false, throwable.getMessage()));
                 });
         }
@@ -214,7 +212,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
     public void userInfo(String accessToken, Handler<UserInfoResponse> responseHandler) {
         HttpClient httpClient = httpClients.computeIfAbsent(Thread.currentThread(), context -> vertx.createHttpClient(httpClientOptions));
 
-        logger.debug("Get userinfo from {}", userInfoEndpointURI);
+        log.debug("Get userinfo from {}", userInfoEndpointURI);
 
         final RequestOptions reqOptions = new RequestOptions()
             .setMethod(HttpMethod.GET)
@@ -229,7 +227,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
             .compose(HttpClientRequest::send)
             .compose(response -> response.body().map(buffer -> new HttpResult(response.statusCode(), buffer.toString())))
             .onSuccess(result -> {
-                logger.debug("Userinfo endpoint returns a response with a {} status code", result.statusCode());
+                log.debug("Userinfo endpoint returns a response with a {} status code", result.statusCode());
                 if (result.statusCode() == HttpStatusCode.OK_200) {
                     responseHandler.handle(new UserInfoResponse(true, result.body()));
                 } else {
@@ -237,7 +235,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
                 }
             })
             .onFailure(throwable -> {
-                logger.error("An error occurs while getting userinfo from access token", throwable);
+                log.error("An error occurs while getting userinfo from access token", throwable);
                 responseHandler.handle(new UserInfoResponse(false, throwable.getMessage()));
             });
     }
@@ -248,7 +246,7 @@ public class OAuth2KeycloakResource extends OAuth2Resource<OAuth2KeycloakResourc
         try {
             return MAPPER.readTree(oauthPayload);
         } catch (IOException ioe) {
-            logger.error("Unable to check required scope from introspection endpoint payload: {}", oauthPayload);
+            log.error("Unable to check required scope from introspection endpoint payload: {}", oauthPayload);
             return null;
         }
     }
