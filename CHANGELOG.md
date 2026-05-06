@@ -1,3 +1,20 @@
+# [4.0.0-alpha.1](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.1...4.0.0-alpha.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* update gravitee-parent (customlog) ([ab9f9de](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/ab9f9de4447ee1622700c5c15c7811783a16d888))
+
+
+### Features
+
+* upgrade to Vertx 5 ([dd04628](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/dd0462891b862b770377fe63ebf1660021fa6969))
+
+
+### BREAKING CHANGES
+
+* upgrade to Vertx5
+
 ## [3.0.1](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.0...3.0.1) (2026-04-15)
 
 
