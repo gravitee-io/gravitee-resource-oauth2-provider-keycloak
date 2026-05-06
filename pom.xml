@@ -35,18 +35,16 @@
     <description>The resource is defined to introspect an access token provided by Keycloak.</description>
 
     <properties>
-        <gravitee-bom.version>6.0.60</gravitee-bom.version>
+        <gravitee-apim.version>4.12.0-SNAPSHOT</gravitee-apim.version>
+
         <gravitee-resource-api.version>1.1.0</gravitee-resource-api.version>
-        <gravitee-gateway-api.version>3.8.1</gravitee-gateway-api.version>
         <gravitee-resource-oauth2-provider-api.version>1.5.1</gravitee-resource-oauth2-provider-api.version>
-        <gravitee-node-api.version>4.8.7</gravitee-node-api.version>
+
         <keycloak.version>25.0.3</keycloak.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <httpclient.version>4.5.14</httpclient.version>
         <wiremock.version>3.9.1</wiremock.version>
-        <bouncy-castle.version>1.78</bouncy-castle.version>
 
-        <maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
         <!-- Property used by the publication job in CI-->
         <publish-folder-path>graviteeio-apim/plugins/resources</publish-folder-path>
     </properties>
@@ -55,9 +53,9 @@
         <dependencies>
             <!-- Import bom to properly inherit all dependencies -->
             <dependency>
-                <groupId>io.gravitee</groupId>
-                <artifactId>gravitee-bom</artifactId>
-                <version>${gravitee-bom.version}</version>
+                <groupId>io.gravitee.apim</groupId>
+                <artifactId>gravitee-apim-bom</artifactId>
+                <version>${gravitee-apim.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -76,7 +74,6 @@
         <dependency>
             <groupId>io.gravitee.gateway</groupId>
             <artifactId>gravitee-gateway-api</artifactId>
-            <version>${gravitee-gateway-api.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -90,7 +87,6 @@
         <dependency>
             <groupId>io.gravitee.node</groupId>
             <artifactId>gravitee-node-api</artifactId>
-            <version>${gravitee-node-api.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -124,13 +120,11 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>${bouncy-castle.version}</version>
         </dependency>
         <!-- Override bcpkix-jdk18on version for vulnerabilities, used in keycloak-adapter-core -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bouncy-castle.version}</version>
         </dependency>
 
         <!-- HTTP client -->
@@ -207,7 +201,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven-assembly-plugin.version}</version>
                 <configuration>
                     <appendAssemblyId>false</appendAssemblyId>
                     <descriptors>
@@ -223,10 +216,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.hubspot.maven.plugins</groupId>
-                <artifactId>prettier-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

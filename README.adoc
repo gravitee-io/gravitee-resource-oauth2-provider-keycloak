@@ -20,7 +20,8 @@ If not, the resource is calling the introspection endpoint at `http://keycloak_h
 |===
 |Plugin version | APIM version
 
-|3.0 and upper                  | 4.10.x to latest
+|4.0 and upper                  | 4.12.x to latest
+|3.0 and upper                  | 4.10.x to 4.11.x
 |2.0 and upper                  | until 4.9.x
 |===
 
@@ -65,11 +66,11 @@ You can configure the resource with the following options :
     "configuration" : {
         "keycloakConfiguration":
             "{
-                "realm": "gravitee",  
+                "realm": "gravitee",
                 "auth-server-url": "http://localhost:8080/auth",
                 "ssl-required": "external",
                 "resource": "gravitee",
-                "credentials": {  
+                "credentials": {
                     "secret": "f1c9ff64-abcf-4671-9ddb-4fe4a172390d"
                 },
                 "confidential-port": 0,
