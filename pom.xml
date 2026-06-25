@@ -43,7 +43,7 @@
         <keycloak.version>25.0.3</keycloak.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <wiremock.version>3.9.1</wiremock.version>
+        <wiremock.version>3.13.2</wiremock.version>
 
         <!-- Property used by the publication job in CI-->
         <publish-folder-path>graviteeio-apim/plugins/resources</publish-folder-path>
