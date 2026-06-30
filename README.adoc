@@ -63,22 +63,11 @@ You can configure the resource with the following options :
 .Configuration example
 ----
 {
-    "configuration" : {
-        "keycloakConfiguration":
-            "{
-                "realm": "gravitee",
-                "auth-server-url": "http://localhost:8080/auth",
-                "ssl-required": "external",
-                "resource": "gravitee",
-                "credentials": {
-                    "secret": "f1c9ff64-abcf-4671-9ddb-4fe4a172390d"
-                },
-                "confidential-port": 0,
-                "policy-enforcer": {}
-            }"
-        },
+    "configuration": {
+        "keycloakConfiguration": "{\"realm\":\"gravitee\",\"auth-server-url\":\"http://localhost:8080/auth\",\"ssl-required\":\"external\",\"resource\":\"gravitee\",\"credentials\":{\"secret\":\"f1c9ff64-abcf-4671-9ddb-4fe4a172390d\"},\"confidential-port\":0,\"policy-enforcer\":{}}",
         "validateTokenLocally": true,
         "verifyHost": false,
         "trustAll": true
+    }
 }
 ----
