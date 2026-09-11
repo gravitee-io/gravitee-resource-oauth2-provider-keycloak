@@ -82,3 +82,29 @@ You can configure the resource with the following options :
         "trustAll": true
 }
 ----
+
+=== UserInfo only
+
+When the API is secured by a JWT plan and the resource is only consumed by the
+`OpenID Connect - UserInfo` policy, no client credentials are needed: the UserInfo
+call authenticates with the caller's own access token. The `credentials` block of
+the adapter configuration is only used to authorize introspection calls, and can
+be omitted:
+
+[source, json]
+.UserInfo-only configuration example
+----
+{
+    "configuration" : {
+        "keycloakConfiguration":
+            "{
+                "realm": "gravitee",
+                "auth-server-url": "http://localhost:8080",
+                "resource": "gravitee"
+            }",
+        "validateTokenLocally": true
+}
+----
+
+`resource` stays mandatory — the Keycloak adapter refuses to start without it,
+with `Must set 'resource' in config` — but it is the client identifier, not a secret.
