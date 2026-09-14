@@ -1,3 +1,19 @@
+# [5.0.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/4.0.0...5.0.0) (2026-09-14)
+
+
+### Features
+
+* add token exchange support for Keycloak resource ([8c131a0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/commit/8c131a014a7313c89c78afffb3480678e4690043))
+
+
+### BREAKING CHANGES
+
+* requires APIM 4.12.18 or later. The resource now references
+resource-oauth2-provider-api 1.6.0 types in its class signature, so on a
+gateway shipping 1.5.1 (APIM 4.12.0 to 4.12.17) the class fails to load and
+the resource, including introspection, is not instantiated. Pinning the
+dependency does not change that: it only affects the compile classpath.
+
 # [4.0.0](https://github.com/gravitee-io/gravitee-resource-oauth2-provider-keycloak/compare/3.0.1...4.0.0) (2026-06-23)
 
 
