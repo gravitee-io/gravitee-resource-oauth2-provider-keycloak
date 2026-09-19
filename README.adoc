@@ -15,16 +15,18 @@ The Keycloak adapter resource is defined to introspect an access token provided 
 If the `validateTokenLocally` configuration property is true, the incoming access token is validated without having to invoke en introspection endpoint.
 If not, the resource is calling the introspection endpoint at `http://keycloak_host:port/auth/realms/{realmName}/protocol/openid-connect/token/introspect`.
 
-== Compatibility with APIM
+== Compatibility matrix
 
 |===
-|Plugin version | APIM version
+| Plugin version | APIM              | Java version
 
-|5.0 and upper                  | 4.12.18 to latest
-|4.0 and upper                  | 4.12.x to 4.12.17
-|3.0 and upper                  | 4.10.x to 4.11.x
-|2.0 and upper                  | until 4.9.x
+| 5.0 and upper  | 4.12.18 to latest | 21
+| 4.0 and upper  | 4.12.x to 4.12.17 | 21
+| 3.0 and upper  | 4.10.x to 4.11.x  | 17
+| 2.0 and upper  | until 4.9.x       | 17
 |===
+
+The *Java version* column is the bytecode level of the latest release of each line, which sets the minimum runtime able to load the artifact.
 
 == Configuration
 
